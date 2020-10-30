@@ -3,13 +3,11 @@ namespace app\models;
 
 use Yii;
 use yii\base\Model;
-use function morphos\Russian\inflectName; //падежи 
+use function morphos\Russian\inflectName; //библеотека для работы с падежами. 
 require('.\..\vendor\setasign\fpdf\fpdf.php');
 
 
-/**
- * ContactForm is the model behind the contact form.
- */
+
 class ContactForm extends Model
 {    
     public $email;
@@ -22,20 +20,19 @@ class ContactForm extends Model
 
 
     /**
-     * @return array the validation rules.
+     * @return array Правила валидации
      */
     public function rules()
     {
         return [
-            // name, email, subject and body are required
-            [['fromPerson', 'fromPlace', 'toPerson', 'toPlace', 'flag'], 'required'],
-            // email has to be a valid email address
+            // данные поля помечены как обязательные для заполнения
+            [['fromPerson', 'fromPlace', 'toPerson', 'toPlace', 'flag'], 'required'],            
             ['fromPerson', 'string', 'min'=>4, 'max'=>20],
             ['toPerson', 'string', 'min'=>4, 'max'=>20],
-            ['email', 'email', 'when' =>function($model) {
+            ['email', 'email', 'when' =>function($model) { //правила для валидации, в случае если чекбокс не нажат, валидация по полю email не проводится
                 return $model->flag == 1;
             }],
-            // verifyCode needs to be entered correctly
+            // кправила для капчи
             ['verifyCode', 'captcha'],
         ];
     }
@@ -60,28 +57,22 @@ class ContactForm extends Model
     public function contact($email)
     {        
         if ($this->validate()) {
-            $token = "87b700e12ac7694540c921880c87501fc2b9ed13";
-            $secret = "500760fa71bf9be61a2bfc2feb42045968993f8b";
-            $dadata = new \Dadata\DadataClient($token, $secret);
-            $apiObj1 = $dadata->clean("address", $this->fromPlace);
+            $token = "87b700e12ac7694540c921880c87501fc2b9ed13"; // токен для подключения к API dadata
+            $secret = "500760fa71bf9be61a2bfc2feb42045968993f8b";// ключ для подключения к API dadata
+            $dadata = new \Dadata\DadataClient($token, $secret); //подключение к dadata
+            $apiObj1 = $dadata->clean("address", $this->fromPlace); // получаем адреса пропущенные через api (корректная форма)
             $apiObj2 = $dadata->clean("address", $this->toPlace);
 
-            $departurePlace = explode(",", $apiObj1['result']);  
-            $destination =  explode(",", $apiObj2['result']);
-            
-            // $stringLng = 0;           
-            // $currentString = "";
-            // $xForAdress = 1340;
-            // $yForAdress = 1590;
+            $departurePlace = explode(",", $apiObj1['result']);   // формируем два массива адресов, для дальнешего переноса по разным стркоам
+            $destination =  explode(",", $apiObj2['result']);     //в случае переполнения
 
             $envelope = __DIR__ .'\images\konvert-6.jpg';
             $img = ImageCreateFromJPEG($envelope);
             $black = imagecolorallocate($img, 0x00, 0x00, 0x00);           
             $font_file = __DIR__ .'\fonts\Roboto-Black.ttf';
 
-            function writeAdress($x,$y, $place, $img, $font_file){
-                
-                $stringLng = 0;           
+            function writeAdress($x,$y, $place, $img, $font_file){ // функция для отрисовка в полях с адресами, а так же переносов их в следующее строку                                                                                            
+                $stringLng = 0;                                    // дабы избежать переполнения
                 $currentString = "";
                 foreach($place as $item){
                     $stringLng = $stringLng + strlen($item);
@@ -97,36 +88,32 @@ class ContactForm extends Model
                 imagefttext($img, 30, 0, $x, $y, $black, $font_file, $currentString);
             }
 
-            // Рисуем текст 'PHP Manual' шрифтом 30го размера
-            //перенос слишком длинного текста на следущую
+            // Рисуем текст 'PHP Manual' шрифтом 30го размера            
             
-            imagefttext($img, 30, 0, 520, 840, $black, $font_file, inflectName($this->fromPerson, 'родительный')); // от кого 
-            writeAdress(520, 920, $departurePlace, $img, $font_file); // от куда
-            // imagefttext($img, 30, 0, 520, 920, $black, $font_file, $departurePlace["result"]); 
-            imagefttext($img, 30, 0, 1340, 1430, $black, $font_file,inflectName($this->toPerson, 'дательный')); // кому
-            writeAdress(1340, 1590, $destination, $img, $font_file);// куда
-            // imagefttext($img, 30, 0, 1340, 1590, $black, $font_file, $destination["result"]); 
+            imagefttext($img, 30, 0, 520, 840, $black, $font_file, inflectName($this->fromPerson, 'родительный')); // заполняем поле "от кого" 
+            writeAdress(520, 920, $departurePlace, $img, $font_file); // заполняем поле "от куда"            
+            imagefttext($img, 30, 0, 1340, 1430, $black, $font_file,inflectName($this->toPerson, 'дательный')); // заполняем поле "кому"
+            writeAdress(1340, 1590, $destination, $img, $font_file);// заполняем поле "куда"
 
-            $index = (int)$apiObj2["postal_code"];
+            $index = (int)$apiObj2["postal_code"]; // получаем данные об индексе через dadata API
             $chars = preg_split('//', $index, -1, PREG_SPLIT_NO_EMPTY);  
             $x = 1210;           
             foreach ($chars as &$value) {    
                 imagefttext($img, 30, 0, $x, 1900, $black, $font_file, $value);// Добавляем индекс в каждую ячейку - своя цифра 
                 $x = $x+75; 
             }
-
             imagejpeg($img, 'currentEnvelope.jpg'); 
             imagedestroy($img);
 
             $currentEnvelope = "currentEnvelope.jpg";
-            $pdf=new \FPDF();
+            $pdf=new \FPDF(); // используем данную библиотеку для того, чтобы засунуть наше изображение в формат PDF
             $pdf->AddPage();
             $pdf->SetFont('Arial','B',16);
             $pdf->Image($currentEnvelope ,60,30,90,0); 
              
             
             
-            if($this->flag == 1){               
+            if($this->flag == 1){      // проверка на то, прожат ли чекбокс. Если да - отправляем письмо, иначе - просто загружаем файл          
                 Yii::$app->mailer->compose()
                     ->setTo($this->email)
                     ->setFrom(['your email adress here!' => Yii::$app->params['senderName']])
