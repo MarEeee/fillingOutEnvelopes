@@ -32,8 +32,8 @@ $config = [
             'transport' => [
                 'class' => 'Swift_SmtpTransport',
                 'host' => 'smtp.gmail.com',
-                'username' => 'pro100efim@gmail.com',
-                'password' => '2932949wwa',
+                'username' => 'your login here!',
+                'password' => ' your password here!',
                 'port' => '587',
                 'encryption' => 'tls',
                 'streamOptions' => [ 'ssl' => [ 'allow_self_signed' => true, 'verify_peer' => false, 'verify_peer_name' => false, ], ] 

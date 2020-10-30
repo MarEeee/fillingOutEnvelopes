@@ -129,7 +129,7 @@ class ContactForm extends Model
             if($this->flag == 1){               
                 Yii::$app->mailer->compose()
                     ->setTo($this->email)
-                    ->setFrom(['pro100efim@gmail.com' => Yii::$app->params['senderName']])
+                    ->setFrom(['your email adress here!' => Yii::$app->params['senderName']])
                     ->setReplyTo([$this->email => $this->fromPerson])
                     ->setSubject("Ваш конверт")                                  
                     ->attachContent($pdf->Output('', 'S'), ['fileName' => 'pdfName.pdf',   'contentType' => 'application/pdf'])
