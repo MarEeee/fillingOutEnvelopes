@@ -137,7 +137,7 @@ class ContactForm extends Model
             }            
             header('Content-Type: application/octet-stream');
             header('Content-Disposition: attachment; filename=' . 'enelope.pdf');
-             // работает не коорректно, не переводит на нужную страницу
+            exit($pdf->Output('', 'S'));  // работает не коорректно, не переводит на нужную страницу
             
             return true;
         }
