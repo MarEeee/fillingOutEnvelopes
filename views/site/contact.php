@@ -1,4 +1,4 @@
-<?php
+<!-- <?php
 
 /* @var $this yii\web\View */
 /* @var $form yii\bootstrap\ActiveForm */
@@ -19,7 +19,7 @@ $this->params['breadcrumbs'][] = $this->title;
 
         <div class="alert alert-success">
             Thank you for using our service!
-        </div>
+        </div>    
                
     <?php else: ?>
 
@@ -54,5 +54,4 @@ $this->params['breadcrumbs'][] = $this->title;
         </div>
 
     <?php endif; ?>
-</div>
-<script src='./../../web/index.js' type="module"></script>
+</div> -->

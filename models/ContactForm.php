@@ -1,7 +1,4 @@
 <?php
-
-
-
 namespace app\models;
 
 use Yii;
@@ -20,9 +17,7 @@ class ContactForm extends Model
     public $fromPlace;
     public $toPerson;
     public $toPlace;
-    public $flag;
-    // public $subject;
-    // public $body;
+    public $flag; 
     public $verifyCode;
 
 
@@ -60,31 +55,59 @@ class ContactForm extends Model
      * @param string $email the target email address
      * @return bool whether the model passes validation
      */
+   
+
     public function contact($email)
     {        
         if ($this->validate()) {
-            $token = "a1b57d8c83094803ca4dd05e965ebb3fe3ea5cc8";
-            $secret = "d1e75b59b67abe171d4e9df4729483205972664a";
+            $token = "87b700e12ac7694540c921880c87501fc2b9ed13";
+            $secret = "500760fa71bf9be61a2bfc2feb42045968993f8b";
             $dadata = new \Dadata\DadataClient($token, $secret);
-            $departurePlace = $dadata->clean("address", $this->fromPlace);  
-            $destination = $dadata->clean("address", $this->toPlace);           
-          
+            $apiObj1 = $dadata->clean("address", $this->fromPlace);
+            $apiObj2 = $dadata->clean("address", $this->toPlace);
+
+            $departurePlace = explode(",", $apiObj1['result']);  
+            $destination =  explode(",", $apiObj2['result']);
+            
+            // $stringLng = 0;           
+            // $currentString = "";
+            // $xForAdress = 1340;
+            // $yForAdress = 1590;
 
             $envelope = __DIR__ .'\images\konvert-6.jpg';
             $img = ImageCreateFromJPEG($envelope);
-            $black = imagecolorallocate($img, 0x00, 0x00, 0x00);
-            // $info  = getimagesize($envelope); // удалить
+            $black = imagecolorallocate($img, 0x00, 0x00, 0x00);           
             $font_file = __DIR__ .'\fonts\Roboto-Black.ttf';
+
+            function writeAdress($x,$y, $place, $img, $font_file){
+                
+                $stringLng = 0;           
+                $currentString = "";
+                foreach($place as $item){
+                    $stringLng = $stringLng + strlen($item);
+                    if($stringLng<70){
+                        $currentString = $currentString . $item;        
+                    }else{
+                        imagefttext($img, 30, 0, $x, $y, $black, $font_file, $currentString);
+                        $y = $y + 70;
+                        $currentString = $item;
+                        $stringLng = 0;
+                    }    
+                }
+                imagefttext($img, 30, 0, $x, $y, $black, $font_file, $currentString);
+            }
 
             // Рисуем текст 'PHP Manual' шрифтом 30го размера
             //перенос слишком длинного текста на следущую
             
             imagefttext($img, 30, 0, 520, 840, $black, $font_file, inflectName($this->fromPerson, 'родительный')); // от кого 
-            imagefttext($img, 30, 0, 520, 920, $black, $font_file, $departurePlace["result"]); // от куда
+            writeAdress(520, 920, $departurePlace, $img, $font_file); // от куда
+            // imagefttext($img, 30, 0, 520, 920, $black, $font_file, $departurePlace["result"]); 
             imagefttext($img, 30, 0, 1340, 1430, $black, $font_file,inflectName($this->toPerson, 'дательный')); // кому
-            imagefttext($img, 30, 0, 1340, 1590, $black, $font_file, $destination["result"]); // куда
+            writeAdress(1340, 1590, $destination, $img, $font_file);// куда
+            // imagefttext($img, 30, 0, 1340, 1590, $black, $font_file, $destination["result"]); 
 
-            $index = (int)$destination["postal_code"];
+            $index = (int)$apiObj2["postal_code"];
             $chars = preg_split('//', $index, -1, PREG_SPLIT_NO_EMPTY);  
             $x = 1210;           
             foreach ($chars as &$value) {    
@@ -110,20 +133,17 @@ class ContactForm extends Model
                     ->setReplyTo([$this->email => $this->fromPerson])
                     ->setSubject("Ваш конверт")                                  
                     ->attachContent($pdf->Output('', 'S'), ['fileName' => 'pdfName.pdf',   'contentType' => 'application/pdf'])
-                    ->send();  
-                    return true;              
-            }else{
-
-            }
-            // actionDownload();
+                    ->send();                                
+            }            
             header('Content-Type: application/octet-stream');
             header('Content-Disposition: attachment; filename=' . 'enelope.pdf');
-            exit($pdf->Output('', 'S'));  // работает не коорректно, не переводит на нужную страницу
+             // работает не коорректно, не переводит на нужную страницу
             
             return true;
         }
         
         return false;
     }
-
+   
 }
+
